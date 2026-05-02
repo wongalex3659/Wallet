@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Expense Tracker iOS</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.1rem);
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem;
+      --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+      --color-bg: #f4f5f7; --color-surface: rgba(255,255,255,0.78); --color-surface-2: rgba(255,255,255,0.92);
+      --color-surface-offset: #eceff3; --color-border: rgba(17,24,39,0.08); --color-divider: rgba(17,24,39,0.08);
+      --color-text: #111827; --color-text-muted: #5b6474; --color-text-faint: #97a0af; --color-text-inverse: #f8fafc;
+      --color-primary: #0a84ff; --color-primary-highlight: rgba(10,132,255,0.12);
+      --color-success: #16a34a; --color-success-highlight: rgba(22,163,74,0.12);
+      --color-error: #ef4444; --color-error-highlight: rgba(239,68,68,0.12);
+      --radius-sm: 0.5rem; --radius-md: 0.875rem; --radius-lg: 1.25rem; --radius-xl: 1.75rem; --radius-full: 999px;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.08), 0 6px 12px rgba(15, 23, 42, 0.05);
+      --font-body: 'Satoshi', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --chart-a: #0a84ff; --chart-b: #16a34a; --chart-c: #8b5cf6; --chart-d: #f59e0b; --chart-e: #ef4444; --chart-f: #14b8a6;
+    }
+    [data-theme="dark"] {
+      --color-bg: #050816;
+      --color-surface: rgba(17, 24, 39, 0.9);
+      --color-surface-2: rgba(15, 23, 42, 0.96);
+      --color-surface-offset: #020617;
+      --color-border: rgba(148,163,184,0.24);
+      --color-divider: rgba(51,65,85,0.6);
+      --color-text: #e5e7eb;
+      --color-text-muted: #9ca3af;
+      --color-text-faint: #6b7280;
+      --color-text-inverse: #020617;
+      --color-primary: #38bdf8;
+      --color-primary-highlight: rgba(56,189,248,0.18);
+      --color-success: #4ade80;
+      --color-success-highlight: rgba(74,222,128,0.16);
+      --color-error: #f97373;
+      --color-error-highlight: rgba(248,113,113,0.18);
+      --shadow-sm: 0 1px 2px rgba(15,23,42,0.6);
+      --shadow-md: 0 20px 40px rgba(15,23,42,0.75), 0 0 0 1px rgba(15,23,42,0.8);
+      --chart-a: #38bdf8; --chart-b: #22c55e; --chart-c: #a855f7; --chart-d: #eab308; --chart-e: #f97316; --chart-f: #06b6d4;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100dvh; font-family: var(--font-body); font-size: var(--text-base); color: var(--color-text);
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.14), transparent 45%),
+        radial-gradient(circle at bottom right, rgba(236,72,153,0.12), transparent 55%),
+        linear-gradient(180deg, #020617, #020617 60%, #020617);
+      line-height: 1.5;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; border: 0; background: none; color: inherit; }
+    input, select, textarea { border: 0; background: transparent; color: inherit; }
+    h1, h2, h3, p { margin: 0; }
+    .app-shell {
+      width: min(100%, 520px); margin: 0 auto; min-height: 100dvh;
+      padding: calc(var(--safe-top) + var(--space-4)) var(--space-4) calc(var(--safe-bottom) + 5.8rem);
+    }
+    .skip-link {
+      position: absolute; left: -9999px; top: var(--space-4);
+      background: var(--color-primary); color: white; padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md); z-index: 999;
+    }
+    .skip-link:focus { left: var(--space-4); }
+    .glass {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      box-shadow: var(--shadow-md);
+    }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);
+    }
+    .brand { display: flex; gap: var(--space-3); align-items: center; }
+    .logo {
+      width: 2.75rem; height: 2.75rem; border-radius: 1rem;
+      background:
+        conic-gradient(from 160deg, #22c55e, #38bdf8, #8b5cf6, #22c55e);
+      display: grid; place-items: center; color: white; box-shadow: 0 0 24px rgba(56,189,248,0.5);
+      position: relative; overflow: hidden;
+    }
+    .logo::after {
+      content: ""; position: absolute; inset: 16%; border-radius: inherit;
+      background: radial-gradient(circle at 0 0, rgba(255,255,255,0.4), transparent 55%);
+      mix-blend-mode: screen;
+    }
+    .brand h1 { font-size: var(--text-lg); letter-spacing: -0.03em; }
+    .brand p { color: var(--color-text-muted); font-size: var(--text-xs); }
+    .icon-btn {
+      min-width: 44px; min-height: 44px; border-radius: var(--radius-full);
+      display: grid; place-items: center;
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.25), transparent 60%),
+                  var(--color-surface-2);
+      color: var(--color-text); border: 1px solid rgba(148,163,184,0.35);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.8), 0 12px 28px rgba(15,23,42,0.85);
+    }
+    .hero-card {
+      padding: var(--space-5); border-radius: 1.8rem; margin-bottom: var(--space-5);
+      overflow: hidden; position: relative;
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.3), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(236,72,153,0.24), transparent 55%),
+        linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.9));
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 28px 60px rgba(15,23,42,0.9);
+    }
+    .hero-card::before {
+      content: ""; position: absolute; inset: -30%; opacity: 0.6;
+      background:
+        conic-gradient(from 200deg, rgba(56,189,248,0.55), transparent 40%, rgba(236,72,153,0.45), transparent 80%);
+      filter: blur(30px); mix-blend-mode: screen;
+    }
+    .hero-card > * { position: relative; }
+    .hero-label { color: var(--color-text-muted); font-size: var(--text-sm); margin-bottom: var(--space-2); }
+    .balance-row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+    .balance {
+      font-size: 2.2rem; letter-spacing: -0.04em; font-weight: 700;
+      text-shadow: 0 0 22px rgba(56,189,248,0.45);
+    }
+    .delta {
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-full); font-size: var(--text-xs);
+      background: rgba(22,163,74,0.15); color: var(--color-success); font-weight: 700; white-space: nowrap;
+      box-shadow: 0 0 18px rgba(34,197,94,0.45);
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-top: var(--space-5); }
+    .stat {
+      padding: var(--space-4); border-radius: 1.2rem;
+      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.92));
+      border: 1px solid rgba(148,163,184,0.45);
+      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
+    }
+    .stat small { display: block; color: var(--color-text-muted); font-size: var(--text-xs); margin-bottom: var(--space-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .stat strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+    .tabs {
+      display: flex; gap: var(--space-2); margin-bottom: var(--space-5); overflow: auto; padding-bottom: var(--space-1);
+    }
+    .app-tab {
+      min-height: 42px; padding: 0 var(--space-4);
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(15,23,42,0.9));
+      border: 1px solid rgba(148,163,184,0.4);
+      color: var(--color-text-muted); white-space: nowrap;
+      box-shadow: 0 10px 26px rgba(15,23,42,0.85);
+    }
+    .app-tab.active {
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,0.3), transparent 60%),
+        linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white; border-color: transparent;
+      box-shadow: 0 0 22px rgba(56,189,248,0.65);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .section { margin-bottom: var(--space-5); }
+    .section-head {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); gap: var(--space-3);
+    }
+    .section-head h2 { font-size: var(--text-lg); letter-spacing: -0.03em; }
+    .section-head button { color: var(--color-primary); font-size: var(--text-sm); }
+    .segmented {
+      display: inline-grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-1); padding: var(--space-1);
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.2), transparent 70%), rgba(15,23,42,0.96);
+      border: 1px solid rgba(148,163,184,0.65); border-radius: var(--radius-full);
+      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
+    }
+    .segment {
+      padding: var(--space-2) var(--space-4); border-radius: var(--radius-full);
+      color: var(--color-text-muted); background: transparent; min-height: 40px;
+    }
+    .segment.active {
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      color: white;
+      box-shadow: 0 0 18px rgba(56,189,248,0.7);
+    }
+    .form-card, .list-card, .summary-card, .chart-card {
+      border-radius: 1.5rem; padding: var(--space-4);
+      background: linear-gradient(145deg, rgba(15,23,42,0.98), rgba(15,23,42,0.94));
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 22px 50px rgba(15,23,42,0.95);
+    }
+    .form-grid, .transaction-list, .chart-grid { display: grid; gap: var(--space-3); }
+    .field { display: grid; gap: var(--space-2); }
+    .field label { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: 500; }
+    .field input, .field select {
+      width: 100%; min-height: 48px; border-radius: 1rem;
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.2), transparent 65%), rgba(15,23,42,0.96);
+      border: 1px solid rgba(148,163,184,0.6); padding: 0 var(--space-4); outline: none; color: var(--color-text);
+    }
+    .field input::placeholder { color: var(--color-text-faint); }
+    .field input:focus, .field select:focus {
+      border-color: #38bdf8; box-shadow: 0 0 0 1px rgba(56,189,248,0.6), 0 0 24px rgba(56,189,248,0.85);
+    }
+    .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .btn-row { display: flex; gap: var(--space-3); }
+    .primary-btn, .secondary-btn {
+      min-height: 48px; border-radius: var(--radius-full); padding: 0 var(--space-5); font-weight: 700; flex: 1;
+    }
+    .primary-btn {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white; box-shadow: 0 18px 40px rgba(37,99,235,0.9);
+    }
+    .primary-btn:active { transform: translateY(1px); box-shadow: 0 8px 26px rgba(37,99,235,0.85); }
+    .secondary-btn {
+      background: rgba(15,23,42,0.98); color: var(--color-text); border: 1px solid rgba(148,163,184,0.6);
+    }
+    .summary-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+    .summary-pill, .insight-pill {
+      padding: var(--space-3); border-radius: 1.1rem;
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.22), transparent 65%), rgba(15,23,42,0.98);
+      border: 1px solid rgba(148,163,184,0.6);
+    }
+    .summary-pill span, .insight-pill span {
+      display: block; font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-1);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .summary-pill strong, .insight-pill strong { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+    .transaction-item {
+      display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3); align-items: center;
+      padding: var(--space-3); border-radius: 1.1rem;
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.16), transparent 65%), rgba(15,23,42,0.98);
+      border: 1px solid rgba(30,64,175,0.6);
+      box-shadow: 0 14px 34px rgba(15,23,42,0.95);
+    }
+    .tx-icon {
+      width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; font-weight: 700;
+      background: conic-gradient(from 160deg, #22c55e, #38bdf8, #8b5cf6, #22c55e);
+      color: white; box-shadow: 0 0 18px rgba(56,189,248,0.7);
+    }
+    .tx-meta small, .empty-state p, .chart-note {
+      color: var(--color-text-muted); font-size: var(--text-xs);
+    }
+    .tx-amount { text-align: right; font-variant-numeric: tabular-nums; }
+    .tx-amount.income { color: #4ade80; text-shadow: 0 0 12px rgba(34,197,94,0.7); }
+    .tx-amount.expense { color: #f97373; text-shadow: 0 0 12px rgba(248,113,113,0.7); }
+    .delete-btn {
+      width: 36px; height: 36px; border-radius: 999px; background: transparent; color: var(--color-text-faint);
+      margin-left: var(--space-2); border: 1px solid rgba(75,85,99,0.6);
+    }
+    .delete-btn:hover {
+      background: rgba(248,113,113,0.16); color: #fecaca;
+      box-shadow: 0 0 16px rgba(248,113,113,0.6);
+    }
+    .empty-state {
+      display: none; text-align: center; padding: var(--space-8) var(--space-4); color: var(--color-text-muted);
+    }
+    .empty-state.show { display: block; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-card canvas { width: 100% !important; height: 260px !important; }
+    .insight-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-3); }
+    .progress-list { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+    .progress-row { display: grid; gap: var(--space-2); }
+    .progress-head {
+      display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm);
+    }
+    .progress-track {
+      height: 10px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(15,23,42,0.95), rgba(30,64,175,0.9));
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #38bdf8, #a855f7);
+      box-shadow: 0 0 16px rgba(56,189,248,0.75);
+    }
+    .tabbar {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
+      width: min(100%, 520px);
+      padding: var(--space-3) var(--space-4) calc(var(--safe-bottom) + var(--space-3));
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.2), transparent 55%),
+                  rgba(15,23,42,0.98);
+      border-top: 1px solid rgba(148,163,184,0.6);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      box-shadow: 0 -10px 30px rgba(15,23,42,0.9);
+    }
+    .tabbar-inner { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+    .tab-link {
+      min-height: 52px; border-radius: var(--radius-lg); display: grid; place-items: center; gap: 4px;
+      color: var(--color-text-muted); font-size: var(--text-xs);
+      background: rgba(15,23,42,0.98);
+      border: 1px solid rgba(75,85,99,0.8);
+    }
+    .tab-link.active {
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      color: white; font-weight: 700; border-color: transparent;
+      box-shadow: 0 0 20px rgba(56,189,248,0.7);
+    }
+    .toast {
+      position: fixed; left: 50%; transform: translateX(-50%) translateY(20px); bottom: 100px;
+      opacity: 0; pointer-events: none; transition: 180ms ease;
+      padding: var(--space-3) var(--space-4); border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      color: var(--color-text-inverse); font-size: var(--text-sm);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.95);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    @media (min-width: 900px) {
+      .app-shell, .tabbar { width: min(100%, 980px); }
+      .chart-grid { grid-template-columns: 1fr 1fr; }
+      .wide-card { grid-column: 1 / -1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="app-shell">
+    <header class="topbar" aria-label="Top bar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 7.5C6 6.12 7.12 5 8.5 5H15.5C16.88 5 18 6.12 18 7.5V16.5C18 17.88 16.88 19 15.5 19H8.5C7.12 19 6 17.88 6 16.5V7.5Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M9 10.5H15M9 13.5H12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>CashFlow</h1>
+          <p>Track daily money clearly</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="themeToggle" aria-label="Switch theme" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </header>
+
+    <main id="main-content">
+      <section class="hero-card" aria-label="Balance summary">
+        <p class="hero-label">This month</p>
+        <div class="balance-row">
+          <div>
+            <div class="balance" id="netBalance">HK$ 0</div>
+            <p class="hero-label">Net balance after income and spending</p>
+          </div>
+          <div class="delta" id="savingRate">0% saved</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat"><small>Income</small><strong id="incomeTotal">HK$ 0</strong></div>
+          <div class="stat"><small>Expenses</small><strong id="expenseTotal">HK$ 0</strong></div>
+        </div>
+      </section>
+
+      <div class="tabs" role="tablist" aria-label="Main sections">
+        <button class="app-tab active" type="button" data-panel="add" aria-selected="true">Add entry</button>
+        <button class="app-tab" type="button" data-panel="records" aria-selected="false">Records</button>
+        <button class="app-tab" type="button" data-panel="insights" aria-selected="false">Insights</button>
+      </div>
+
+      <section class="panel active" id="panel-add" aria-labelledby="Add entry">
+        <div class="section-head">
+          <h2>Add record</h2>
+          <div class="segmented" role="tablist" aria-label="Entry type">
+            <button class="segment active" type="button" data-type="expense" aria-selected="true">Expense</button>
+            <button class="segment" type="button" data-type="income" aria-selected="false">Income</button>
+          </div>
+        </div>
+        <form class="form-card" id="entryForm">
+          <div class="form-grid">
+            <div class="field"><label for="title">Title</label><input id="title" name="title" type="text" placeholder="Coffee, salary, Uber" required /></div>
+            <div class="inline-grid">
+              <div class="field"><label for="amount">Amount</label><input id="amount" name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required /></div>
+              <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required /></div>
+            </div>
+            <div class="inline-grid">
+              <div class="field"><label for="category">Category</label><select id="category" name="category"></select></div>
+              <div class="field"><label for="note">Note</label><input id="note" name="note" type="text" placeholder="Optional" /></div>
+            </div>
+            <div class="btn-row">
+              <button class="primary-btn" type="submit">Save entry</button>
+              <button class="secondary-btn" type="button" id="seedDemo">Load demo</button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" id="panel-records">
+        <div class="section">
+          <div class="section-head">
+            <h2>Today snapshot</h2>
+            <button id="clearAll" type="button">Clear all</button>
+          </div>
+          <div class="summary-card">
+            <div class="summary-pill"><span>Entries</span><strong id="entryCount">0</strong></div>
+            <div class="summary-pill"><span>Top expense</span><strong id="topExpense">-</strong></div>
+            <div class="summary-pill"><span>Top income</span><strong id="topIncome">-</strong></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head">
+            <h2>Recent records</h2>
+            <button id="filterToggle" type="button">All</button>
+          </div>
+          <div class="list-card">
+            <div class="transaction-list" id="transactionList"></div>
+            <div class="empty-state show" id="emptyState">
+              <h3>No entries yet</h3>
+              <p>Add your first income or expense to start tracking your daily cash flow.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-insights">
+        <div class="section-head">
+          <h2>Money insights</h2>
+          <button type="button" id="insightRefresh">Refresh</button>
+        </div>
+        <div class="insight-grid">
+          <div class="insight-pill"><span>Expense share</span><strong id="expenseShare">0%</strong></div>
+          <div class="insight-pill"><span>Income share</span><strong id="incomeShare">0%</strong></div>
+          <div class="insight-pill"><span>Largest category</span><strong id="largestCategory">-</strong></div>
+          <div class="insight-pill"><span>Net position</span><strong id="netPosition">Neutral</strong></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div class="section-head"><h2>Income vs expense</h2></div>
+            <p class="chart-note">Compare total incoming money and total spending.</p>
+            <canvas id="incomeExpenseChart" aria-label="Income versus expense chart"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="section-head"><h2>Spent by category</h2></div>
+            <p class="chart-note">See the percentage of your spending by category.</p>
+            <canvas id="categoryChart" aria-label="Expense category percentage chart"></canvas>
+          </div>
+          <div class="chart-card wide-card">
+            <div class="section-head"><h2>Expense breakdown</h2></div>
+            <p class="chart-note">Top categories ranked by share of total expenses.</p>
+            <div class="progress-list" id="progressList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Bottom navigation">
+    <div class="tabbar-inner">
+      <button class="tab-link active" type="button" data-panel-shortcut="add"><span>Add</span></button>
+      <button class="tab-link" type="button" data-panel-shortcut="records"><span>Records</span></button>
+      <button class="tab-link" type="button" data-panel-shortcut="insights"><span>Insights</span></button>
+    </div>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('entryForm');
+      const list = document.getElementById('transactionList');
+      const emptyState = document.getElementById('emptyState');
+      const categorySelect = document.getElementById('category');
+      const typeButtons = [...document.querySelectorAll('.segment')];
+      const appTabs = [...document.querySelectorAll('.app-tab')];
+      const panels = [...document.querySelectorAll('.panel')];
+      const shortcutTabs = [...document.querySelectorAll('[data-panel-shortcut]')];
+      const filterToggle = document.getElementById('filterToggle');
+      const toast = document.getElementById('toast');
+      const dateInput = document.getElementById('date');
+      const themeToggle = document.getElementById('themeToggle');
+      const root = document.documentElement;
+      const progressList = document.getElementById('progressList');
+
+      const categories = {
+        expense: ['Food', 'Transport', 'Shopping', 'Bills', 'Gym', 'Entertainment', 'Other'],
+        income: ['Salary', 'Freelance', 'Allowance', 'Investment', 'Gift', 'Other']
+      };
+
+      const state = { type: 'expense', filter: 'all', panel: 'add', items: [] };
+      const money = new Intl.NumberFormat('en-HK', { style: 'currency', currency: 'HKD', maximumFractionDigits: 2 });
+      let incomeExpenseChart, categoryChart;
+
+      function chartPalette() {
+        const s = getComputedStyle(document.documentElement);
+        return [s.getPropertyValue('--chart-a').trim(), s.getPropertyValue('--chart-b').trim(), s.getPropertyValue('--chart-c').trim(), s.getPropertyValue('--chart-d').trim(), s.getPropertyValue('--chart-e').trim(), s.getPropertyValue('--chart-f').trim()];
+      }
+
+      function setCategories(type) {
+        categorySelect.innerHTML = categories[type].map(cat => `<option value="${cat}">${cat}</option>`).join('');
+      }
+
+      function setType(type) {
+        state.type = type;
+        typeButtons.forEach(btn => {
+          const active = btn.dataset.type === type;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        setCategories(type);
+      }
+
+      function setPanel(panel) {
+        state.panel = panel;
+        appTabs.forEach(btn => {
+          const active = btn.dataset.panel === panel;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach(panelEl => panelEl.classList.toggle('active', panelEl.id === `panel-${panel}`));
+        shortcutTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.panelShortcut === panel));
+        if (panel === 'insights') renderCharts();
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      function getTotals() {
+        const income = state.items.filter(x => x.type === 'income').reduce((sum, x) => sum + x.amount, 0);
+        const expenses = state.items.filter(x => x.type === 'expense').reduce((sum, x) => sum + x.amount, 0);
+        return { income, expenses, net: income - expenses };
+      }
+
+      function categoryExpenseData() {
+        const totals = {};
+        state.items.filter(x => x.type === 'expense').forEach(item => { totals[item.category] = (totals[item.category] || 0) + item.amount; });
+        return Object.entries(totals).sort((a,b) => b[1] - a[1]);
+      }
+
+      function renderSummary() {
+        const { income, expenses, net } = getTotals();
+        const saved = income > 0 ? Math.max(0, (net / income) * 100) : 0;
+        const topExpense = state.items.filter(x => x.type === 'expense').sort((a,b)=> b.amount-a.amount)[0];
+        const topIncome = state.items.filter(x => x.type === 'income').sort((a,b)=> b.amount-a.amount)[0];
+        const mix = income + expenses;
+        const expenseShare = mix > 0 ? (expenses / mix) * 100 : 0;
+        const incomeShare = mix > 0 ? (income / mix) * 100 : 0;
+        const categoryData = categoryExpenseData();
+
+        document.getElementById('incomeTotal').textContent = money.format(income);
+        document.getElementById('expenseTotal').textContent = money.format(expenses);
+        document.getElementById('netBalance').textContent = money.format(net);
+        document.getElementById('savingRate').textContent = `${saved.toFixed(0)}% saved`;
+        document.getElementById('entryCount').textContent = String(state.items.length);
+        document.getElementById('topExpense').textContent = topExpense ? topExpense.title : '-';
+        document.getElementById('topIncome').textContent = topIncome ? topIncome.title : '-';
+        document.getElementById('expenseShare').textContent = `${expenseShare.toFixed(0)}%`;
+        document.getElementById('incomeShare').textContent = `${incomeShare.toFixed(0)}%`;
+        document.getElementById('largestCategory').textContent = categoryData[0] ? categoryData[0][0] : '-';
+        document.getElementById('netPosition').textContent = net > 0 ? 'Positive' : net < 0 ? 'Negative' : 'Neutral';
+        document.getElementById('savingRate').style.background = net >= 0 ? 'var(--color-success-highlight)' : 'var(--color-error-highlight)';
+        document.getElementById('savingRate').style.color = net >= 0 ? 'var(--color-success)' : 'var(--color-error)';
+      }
+
+      function filteredItems() {
+        if (state.filter === 'all') return [...state.items].reverse();
+        return [...state.items].filter(item => item.type === state.filter).reverse();
+      }
+
+      function iconFor(category) { return category.slice(0, 1).toUpperCase(); }
+
+      function renderList() {
+        const items = filteredItems();
+        emptyState.classList.toggle('show', items.length === 0);
+        list.innerHTML = items.map(item => `
+          <article class="transaction-item">
+            <div class="tx-icon" aria-hidden="true">${iconFor(item.category)}</div>
+            <div class="tx-meta"><strong>${item.title}</strong><small>${item.category} · ${item.date}${item.note ? ` · ${item.note}` : ''}</small></div>
+            <div style="display:flex;align-items:center;">
+              <div class="tx-amount ${item.type}">${item.type === 'income' ? '+' : '-'}${money.format(item.amount)}</div>
+              <button class="delete-btn" data-id="${item.id}" aria-label="Delete ${item.title}">✕</button>
+            </div>
+          </article>
+        `).join('');
+      }
+
+      function renderProgress() {
+        const data = categoryExpenseData();
+        const totalExpense = data.reduce((sum, [, amount]) => sum + amount, 0);
+        progressList.innerHTML = data.length ? data.map(([name, amount]) => {
+          const pct = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+          return `<div class="progress-row"><div class="progress-head"><strong>${name}</strong><span>${pct.toFixed(1)}% · ${money.format(amount)}</span></div><div class="progress-track"><div class="progress-bar" style="width:${pct}%"></div></div></div>`;
+        }).join('') : '<div class="empty-state show"><h3>No expense data yet</h3><p>Add expenses to see where your money goes by category.</p></div>';
+      }
+
+      function makeCharts() {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim();
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim();
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        Chart.defaults.font.family = "Satoshi, -apple-system, BlinkMacSystemFont, sans-serif";
+        incomeExpenseChart = new Chart(document.getElementById('incomeExpenseChart'), {
+          type: 'bar',
+          data: { labels: ['Income', 'Expenses'], datasets: [{ data: [0, 0], backgroundColor: [chartPalette()[1], chartPalette()[4]], borderRadius: 12, borderSkipped: false }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+        });
+        categoryChart = new Chart(document.getElementById('categoryChart'), {
+          type: 'doughnut',
+          data: { labels: ['No data'], datasets: [{ data: [1], backgroundColor: [chartPalette()[0]], borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '62%' }
+        });
+      }
+
+      function renderCharts() {
+        if (!window.Chart) return;
+        if (!incomeExpenseChart || !categoryChart) makeCharts();
+        const { income, expenses } = getTotals();
+        const categoryData = categoryExpenseData();
+        const palette = chartPalette();
+
+        incomeExpenseChart.data.datasets[0].data = [income, expenses];
+        incomeExpenseChart.update();
+
+        if (categoryData.length) {
+          categoryChart.data.labels = categoryData.map(([name]) => name);
+          categoryChart.data.datasets[0].data = categoryData.map(([, amount]) => amount);
+          categoryChart.data.datasets[0].backgroundColor = categoryData.map((_, i) => palette[i % palette.length]);
+        } else {
+          categoryChart.data.labels = ['No expense data'];
+          categoryChart.data.datasets[0].data = [1];
+          categoryChart.data.datasets[0].backgroundColor = [palette[0]];
+        }
+        categoryChart.update();
+        renderProgress();
+      }
+
+      function render() {
+        renderSummary();
+        renderList();
+        renderCharts();
+      }
+
+      function addItem(entry) { state.items.push({ ...entry, id: crypto.randomUUID() }); render(); }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const title = String(formData.get('title')).trim();
+        const amount = Number(formData.get('amount'));
+        const date = String(formData.get('date'));
+        const category = String(formData.get('category'));
+        const note = String(formData.get('note')).trim();
+        if (!title || !amount || amount <= 0 || !date) { showToast('Enter a title, amount, and date.'); return; }
+        addItem({ title, amount, date, category, note, type: state.type });
+        form.reset(); dateInput.valueAsDate = new Date(); setCategories(state.type); showToast(`${state.type === 'income' ? 'Income' : 'Expense'} saved.`);
+      });
+
+      list.addEventListener('click', (event) => {
+        const btn = event.target.closest('.delete-btn');
+        if (!btn) return;
+        state.items = state.items.filter(item => item.id !== btn.dataset.id); render(); showToast('Entry removed.');
+      });
+
+      typeButtons.forEach(btn => btn.addEventListener('click', () => setType(btn.dataset.type)));
+      appTabs.forEach(btn => btn.addEventListener('click', () => setPanel(btn.dataset.panel)));
+      shortcutTabs.forEach(btn => btn.addEventListener('click', () => setPanel(btn.dataset.panelShortcut)));
+
+      filterToggle.addEventListener('click', () => {
+        const order = ['all', 'expense', 'income']; const labels = { all: 'All', expense: 'Expenses', income: 'Income' };
+        state.filter = order[(order.indexOf(state.filter) + 1) % order.length]; filterToggle.textContent = labels[state.filter]; renderList();
+      });
+
+      document.getElementById('clearAll').addEventListener('click', () => { state.items = []; render(); showToast('All entries cleared.'); });
+      document.getElementById('seedDemo').addEventListener('click', () => {
+        state.items = [
+          { id: crypto.randomUUID(), title: 'Salary', amount: 18000, date: '2026-05-01', category: 'Salary', note: 'Monthly pay', type: 'income' },
+          { id: crypto.randomUUID(), title: 'Bitcoin profit', amount: 1500, date: '2026-04-28', category: 'Investment', note: 'Partial take profit', type: 'income' },
+          { id: crypto.randomUUID(), title: 'Coffee', amount: 38, date: '2026-05-01', category: 'Food', note: 'Morning latte', type: 'expense' },
+          { id: crypto.randomUUID(), title: 'MTR', amount: 24.5, date: '2026-05-01', category: 'Transport', note: 'Commute', type: 'expense' },
+          { id: crypto.randomUUID(), title: 'Protein powder', amount: 468, date: '2026-04-30', category: 'Gym', note: 'Supplements', type: 'expense' },
+          { id: crypto.randomUUID(), title: 'Netflix', amount: 78, date: '2026-04-29', category: 'Entertainment', note: '', type: 'expense' }
+        ];
+        render(); showToast('Demo records loaded.');
+      });
+
+      document.getElementById('insightRefresh').addEventListener('click', () => { renderCharts(); showToast('Insights refreshed.'); });
+
+      themeToggle.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        themeToggle.innerHTML = next === 'dark'
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        if (incomeExpenseChart || categoryChart) {
+          incomeExpenseChart?.destroy();
+          categoryChart?.destroy();
+          incomeExpenseChart = null; categoryChart = null;
+          renderCharts();
+        }
+      });
+
+      dateInput.valueAsDate = new Date();
+      setType('expense');
+      setPanel('add');
+      render();
+    });
+  </script>
+</body>
+</html>
