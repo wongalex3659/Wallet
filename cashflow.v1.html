@@ -383,7 +383,6 @@
             </div>
             <div class="btn-row">
               <button class="primary-btn" type="submit">Save entry</button>
-              <button class="secondary-btn" type="button" id="seedDemo">Load demo</button>
             </div>
           </div>
         </form>
@@ -459,6 +458,8 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {
+      const STORAGE_KEY = 'cashflow-items-v1';
+
       const form = document.getElementById('entryForm');
       const list = document.getElementById('transactionList');
       const emptyState = document.getElementById('emptyState');
@@ -486,6 +487,44 @@
       function chartPalette() {
         const s = getComputedStyle(document.documentElement);
         return [s.getPropertyValue('--chart-a').trim(), s.getPropertyValue('--chart-b').trim(), s.getPropertyValue('--chart-c').trim(), s.getPropertyValue('--chart-d').trim(), s.getPropertyValue('--chart-e').trim(), s.getPropertyValue('--chart-f').trim()];
+      }
+
+      function saveToStorage() {
+        try {
+          const payload = state.items.map(item => ({
+            id: item.id,
+            title: item.title,
+            amount: item.amount,
+            date: item.date,
+            category: item.category,
+            note: item.note,
+            type: item.type
+          }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (e) {
+          console.error('Failed to save', e);
+        }
+      }
+
+      function loadFromStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return;
+          state.items = parsed.map(item => ({
+            id: item.id || crypto.randomUUID(),
+            title: String(item.title || '').trim(),
+            amount: Number(item.amount) || 0,
+            date: String(item.date || ''),
+            category: String(item.category || 'Other'),
+            note: String(item.note || ''),
+            type: item.type === 'income' ? 'income' : 'expense'
+          })).filter(x => x.title && x.amount > 0 && x.date);
+        } catch (e) {
+          console.error('Failed to load', e);
+          state.items = [];
+        }
       }
 
       function setCategories(type) {
@@ -636,7 +675,11 @@
         renderCharts();
       }
 
-      function addItem(entry) { state.items.push({ ...entry, id: crypto.randomUUID() }); render(); }
+      function addItem(entry) {
+        state.items.push({ ...entry, id: crypto.randomUUID() });
+        saveToStorage();
+        render();
+      }
 
       form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -654,7 +697,10 @@
       list.addEventListener('click', (event) => {
         const btn = event.target.closest('.delete-btn');
         if (!btn) return;
-        state.items = state.items.filter(item => item.id !== btn.dataset.id); render(); showToast('Entry removed.');
+        state.items = state.items.filter(item => item.id !== btn.dataset.id);
+        saveToStorage();
+        render();
+        showToast('Entry removed.');
       });
 
       typeButtons.forEach(btn => btn.addEventListener('click', () => setType(btn.dataset.type)));
@@ -666,17 +712,11 @@
         state.filter = order[(order.indexOf(state.filter) + 1) % order.length]; filterToggle.textContent = labels[state.filter]; renderList();
       });
 
-      document.getElementById('clearAll').addEventListener('click', () => { state.items = []; render(); showToast('All entries cleared.'); });
-      document.getElementById('seedDemo').addEventListener('click', () => {
-        state.items = [
-          { id: crypto.randomUUID(), title: 'Salary', amount: 18000, date: '2026-05-01', category: 'Salary', note: 'Monthly pay', type: 'income' },
-          { id: crypto.randomUUID(), title: 'Bitcoin profit', amount: 1500, date: '2026-04-28', category: 'Investment', note: 'Partial take profit', type: 'income' },
-          { id: crypto.randomUUID(), title: 'Coffee', amount: 38, date: '2026-05-01', category: 'Food', note: 'Morning latte', type: 'expense' },
-          { id: crypto.randomUUID(), title: 'MTR', amount: 24.5, date: '2026-05-01', category: 'Transport', note: 'Commute', type: 'expense' },
-          { id: crypto.randomUUID(), title: 'Protein powder', amount: 468, date: '2026-04-30', category: 'Gym', note: 'Supplements', type: 'expense' },
-          { id: crypto.randomUUID(), title: 'Netflix', amount: 78, date: '2026-04-29', category: 'Entertainment', note: '', type: 'expense' }
-        ];
-        render(); showToast('Demo records loaded.');
+      document.getElementById('clearAll').addEventListener('click', () => {
+        state.items = [];
+        saveToStorage();
+        render();
+        showToast('All entries cleared.');
       });
 
       document.getElementById('insightRefresh').addEventListener('click', () => { renderCharts(); showToast('Insights refreshed.'); });
@@ -696,6 +736,7 @@
       });
 
       dateInput.valueAsDate = new Date();
+      loadFromStorage();
       setType('expense');
       setPanel('add');
       render();
